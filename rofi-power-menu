@@ -13,19 +13,20 @@ set -e
 set -u
 
 # All supported choices
+##rofi config kb-custom-{1..19} maps to array order. Default: Alt+{1..9}
 all=(shutdown reboot suspend hibernate logout lockscreen)
 
 # By default, show all (i.e., just copy the array)
 show=("${all[@]}")
 
 declare -A texts
-texts[lockscreen]="lock screen"
-texts[switchuser]="switch user"
-texts[logout]="log out"
-texts[suspend]="suspend"
-texts[hibernate]="hibernate"
-texts[reboot]="reboot"
-texts[shutdown]="shut down"
+texts[lockscreen]="(l)ock screen"
+texts[switchuser]="switch (u)ser"
+texts[logout]="(L)og out"
+texts[suspend]="(s)uspend"
+texts[hibernate]="(h)ibernate"
+texts[reboot]="(r)eboot"
+texts[shutdown]="(S)hut down"
 
 declare -A icons
 icons[lockscreen]="\uf023"
@@ -178,10 +179,22 @@ do
 done
 confirmationMessages[cancel]=$(write_message "${icons[cancel]}" "No, cancel")
 
+##ROFI_RETV - An integer number with the current state:
+##0: Initial call of script.
+##1: Selected an entry.
+##2: Selected a custom entry.
+##10-28: Custom keybinding 1-19 ( need to be explicitly enabled by script )
 if [ $# -gt 0 ]
 then
     # If arguments given, use those as the selection
-    selection="${@}"
+    case $ROFI_RETV in
+        1)
+            selection="${@}"
+            ;;
+        1[0-9]|2[0-8])
+            selection=$(echo -e ${messages[${all[$(expr $ROFI_RETV - 10 )]}]})
+            ;;
+    esac
 else
     # Otherwise, use the CLI passed choice if given
     if [ -n "${selectionID+x}" ]
@@ -194,6 +207,8 @@ fi
 echo -e "\0no-custom\x1ftrue"
 # Use markup
 echo -e "\0markup-rows\x1ftrue"
+# use hotkeys
+echo -e "\0use-hot-keys\x1ftrue"
 
 if [ -z "${selection+x}" ]
 then
